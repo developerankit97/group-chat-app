@@ -404,7 +404,7 @@ async function uploadFile() {
 		//console.log('upload file',upload)
 		const formData = new FormData(upload);
 		// const file = document.getElementById('sendFile').files[0];
-		// formData.append('username', 'Nitish');
+		// formData.append('username', 'Ankit');
 		console.log('formData is : ', formData);
 		const responce = await axios.post(
 			`${backendAPIs}/sendFile/${groupId}`,

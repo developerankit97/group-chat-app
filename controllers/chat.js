@@ -368,11 +368,11 @@ const removeAdmin = async (req, res, next) => {
 
 updloadToS3 = (file, filename) => {
 	let s3Bucket = new AWS.S3({
-		accessKeyId: process.env.IAM_USER_KEY,
-		secretAccessKey: process.env.IAM_USER_SECRET,
+		accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+		secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 	});
 	var params = {
-		Bucket: process.env.BUCKET_NAME,
+		Bucket: process.env.AWS_BUCKET_NAME,
 		Key: filename,
 		Body: file,
 		ACL: 'public-read',
