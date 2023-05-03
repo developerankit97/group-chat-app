@@ -1,71 +1,90 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const isStringInvalid = require('../utils/helpers');
 const sendResponse = require('../utils/helpers');
 const sendError = require('../utils/helpers');
 const throwError = require('../utils/helpers');
 const { Op } = require('sequelize');
 
-exports.postSignUp = async (req, res, next) => {
-	const { name, email, password, phNo } = req.body;
-	if (
-		isStringInvalid(name) ||
-		isStringInvalid(email) ||
-		isStringInvalid(password) ||
-		isStringInvalid(phNo)
-	) {
-		return sendError(
-			res,
-			400,
-			'Bad parameters. Something is missing',
-			false
-		);
+function isStringInvalid(string) {
+	if (string == undefined || string.length === 0) {
+		return true;
+	} else {
+		return false;
 	}
-	try {
-		bcrypt.genSalt(10, (err, salt) => {
-			if (err) {
-				throwError(err);
-			}
-			bcrypt.hash(password, salt, async (err, hash) => {
-				if (err) {
-					throwError(err);
-				}
-				const user = await User.findOrCreate({
-					where: { [Op.or]: [{ email: email }, { phNo: phNo }] },
-				});
-				if (!created) {
-					return sendError(
-						res,
-						204,
-						'User already exist with either same email or phonenumber',
-						false
-					);
-				} else {
-					return sendResponse(
-						res,
-						201,
-						'Successfully created new user',
-						true
-					);
-				}
-			});
-		});
-	} catch (err) {
-		sendError(res, 400, 'Bad Request', false);
-	}
-};
+}
 
-exports.postLogin = async (req, res) => {
+function generateAccessToken(id, email, name) {
+	return jwt.sign(
+		{ userId: id, email: email, name: name },
+		process.env.TOKEN_SECRET
+	);
+}
+exports.postSignUp = async (req, res) => {
 	try {
-		const { email, password } = req.body;
-		console.log(email, password);
-		if (isStringInvalid(email) || isStringInvalid(password)) {
+		const { name, email, password, phNo } = req.body;
+		if (
+			isStringInvalid(name) ||
+			isStringInvalid(email) ||
+			isStringInvalid(password) ||
+			isStringInvalid(phNo)
+		) {
 			return res.status(400).json({
 				message: 'Bad parameters. Something is missing',
 				success: false,
 			});
 		}
+		const saltRounds = 10;
+		bcrypt.genSalt(saltRounds, function (err, salt) {
+			if (err) {
+				console.log(err);
+				throw new Error(err);
+			}
+			bcrypt.hash(password, salt, async function (err, hash) {
+				if (err) {
+					console.log(err);
+					throw new Error(err);
+				}
+
+				const user = await User.findAll({
+					where: { [Op.or]: [{ email: email }, { phNo: phNo }] },
+				});
+				//console.log(user);
+				if (user.length > 0) {
+					res.status(400).json({
+						message:
+							'User already exist with either same email or phonenumber',
+					});
+				} else {
+					//console.log(req.body);
+					const data = await User.create({
+						name: name,
+						email: email,
+						password: hash,
+						phNo: phNo,
+					});
+					res.status(201).json({
+						message: 'Successfully created new user',
+					});
+				}
+			});
+		});
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ error: err });
+	}
+};
+
+exports.postLogin = async (req, res) => {
+	const { email, password } = req.body;
+	console.log(email, password);
+	if (isStringInvalid(email) || isStringInvalid(password)) {
+		return res.status(400).json({
+			message: 'Bad parameters. Something is missing',
+			success: false,
+		});
+	}
+	try {
 		const user = await User.findAll({ where: { email: email } });
 		// console.log(user)
 		if (user.length > 0) {
