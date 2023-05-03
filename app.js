@@ -20,4 +20,9 @@ const signupRoutes = require('./routes/user');
 
 app.use('/user', signupRoutes);
 
-app.listen(process.env.PORT);
+sequelize
+	.sync()
+	.then(() => {
+		app.listen(process.env.PORT);
+	})
+	.catch((e) => console.log(e));
